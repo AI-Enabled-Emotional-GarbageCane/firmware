@@ -73,6 +73,12 @@ def is_depth_frame_invalid(
 
 
 class L515DistanceTrigger:
+    """Convert L515 depth frames into proximity-only user_detected events.
+
+    YOLO inference stays in the vision module; firmware only owns depth distance
+    sensing and the public q_detected/user_detected trigger.
+    """
+
     def __init__(
         self,
         q_detected: Queue[dict[str, object]],

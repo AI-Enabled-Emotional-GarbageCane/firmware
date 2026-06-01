@@ -10,6 +10,8 @@
 
 Firmware 不負責模型推論、UI、語音播放、使用者確認流程或開蓋機構。
 
+Intel RealSense L515 是 v0.2 定稿的 camera hardware。中心文件與跨 repo 契約應一致使用 L515。
+
 ## Public Event
 
 `firmware -> vision`
