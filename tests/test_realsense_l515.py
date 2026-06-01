@@ -22,6 +22,11 @@ class FakeFrames:
         return FakeDepthFrame()
 
 
+class MissingDepthFrames:
+    def get_depth_frame(self):
+        return None
+
+
 class FakeDepthSensor:
     def get_depth_scale(self) -> float:
         return 0.001
@@ -58,6 +63,12 @@ class TimeoutPipeline(FakePipeline):
     def wait_for_frames(self, timeout_ms: int | None = None) -> FakeFrames:
         self.wait_timeouts.append(timeout_ms)
         raise RuntimeError("Frame did not arrive before timeout")
+
+
+class MissingDepthPipeline(FakePipeline):
+    def wait_for_frames(self, timeout_ms: int | None = None) -> MissingDepthFrames:
+        self.wait_timeouts.append(timeout_ms)
+        return MissingDepthFrames()
 
 
 class FakeConfig:
@@ -114,6 +125,16 @@ class RealSenseL515Tests(unittest.TestCase):
                 sys.modules.pop("pyrealsense2", None)
             else:
                 sys.modules["pyrealsense2"] = previous
+
+        self.assertEqual(pipeline.wait_timeouts, [1000])
+
+    def test_read_depth_frame_raises_clear_runtime_error_when_depth_frame_missing(self) -> None:
+        pipeline = MissingDepthPipeline()
+        camera = L515DepthCamera(L515CameraConfig(warmup_frames=0, timeout_ms=1000))
+        camera._pipeline = pipeline
+
+        with self.assertRaisesRegex(RuntimeError, "missing L515 depth frame"):
+            camera.read_depth_frame()
 
         self.assertEqual(pipeline.wait_timeouts, [1000])
 

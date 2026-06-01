@@ -5,7 +5,7 @@ import time
 from typing import Callable, Protocol
 
 from .distance_trigger import DistanceTriggerConfig, L515DistanceTrigger
-from .led import LEDController, LEDStatus
+from .led import LEDController, VALID_LED_STATUSES
 from .realsense_l515 import L515DepthCamera
 
 
@@ -33,13 +33,14 @@ def run_distance_trigger_loop(
     trigger = L515DistanceTrigger(q_detected, config=config)
     processed = 0
 
-    def status(value: LEDStatus) -> None:
-        if led_controller is not None:
+    def status(value: str) -> None:
+        if led_controller is not None and value in VALID_LED_STATUSES:
             led_controller.set_status(value)
         if on_status is not None:
             on_status(value)
 
     try:
+        status("starting")
         camera.start()
         status("idle")
         while max_frames is None or processed < max_frames:

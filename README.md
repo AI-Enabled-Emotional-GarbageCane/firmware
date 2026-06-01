@@ -1,6 +1,6 @@
-# firmware
+# AI 情緒垃圾筒 — Intel RealSense L515 depth sensing firmware
 
-本 repo 是 AI 情緒垃圾桶的韌體子系統。v0.2 定稿硬體為 Intel RealSense L515 depth camera。
+本 repo 是 AI 情緒垃圾筒的韌體子系統。v0.2 定稿硬體為 Intel RealSense L515 depth camera。
 
 ## 職責範圍
 

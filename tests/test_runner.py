@@ -59,6 +59,8 @@ class RunnerTests(unittest.TestCase):
         self.assertTrue(camera.stopped)
         self.assertEqual(q_detected.qsize(), 1)
         self.assertEqual(q_detected.get_nowait()["distance_cm"], 25.0)
+        self.assertEqual(statuses[0], "starting")
+        self.assertIn("idle", statuses)
         self.assertIn("detected", statuses)
 
     def test_loop_sets_camera_error_status_when_start_fails(self) -> None:
@@ -83,8 +85,9 @@ class RunnerTests(unittest.TestCase):
 
         self.assertTrue(camera.started)
         self.assertTrue(camera.stopped)
-        self.assertEqual(statuses, ["camera_error"])
+        self.assertEqual(statuses, ["starting", "camera_error"])
         self.assertEqual(led.status, "camera_error")
+        self.assertEqual(led.history, ["camera_error"])
 
     def test_loop_sets_camera_error_status_when_read_fails(self) -> None:
         class FailingReadCamera(FakeCamera):
@@ -107,8 +110,9 @@ class RunnerTests(unittest.TestCase):
 
         self.assertTrue(camera.started)
         self.assertTrue(camera.stopped)
-        self.assertEqual(statuses, ["idle", "camera_error"])
+        self.assertEqual(statuses, ["starting", "idle", "camera_error"])
         self.assertEqual(led.status, "camera_error")
+        self.assertEqual(led.history, ["idle", "camera_error"])
 
 
 if __name__ == "__main__":
