@@ -17,7 +17,6 @@ Firmware 不負責：
 - roast voice；語音回饋屬於 display。
 - display UI 或 admin panel。
 - 使用者按鈕。
-- 垃圾桶機構控制。
 
 ## Public Contract
 
