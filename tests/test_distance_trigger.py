@@ -79,14 +79,17 @@ class DistanceTriggerTests(unittest.TestCase):
             q_detected,
             config=DistanceTriggerConfig(
                 trigger_distance_cm=30.0,
+                release_distance_cm=45.0,
                 cooldown_sec=2.0,
                 roi_fraction=0.5,
                 invalid_ratio_threshold=0.9,
+                required_consecutive_frames=1,
             ),
             monotonic=clock.monotonic,
             now=fixed_ts,
         )
         depth = np.full((6, 6), 250, dtype=np.uint16)
+        released_depth = np.full((6, 6), 500, dtype=np.uint16)
 
         self.assertTrue(trigger.process_depth_frame(depth, depth_scale_m=0.001))
         self.assertEqual(q_detected.qsize(), 1)
@@ -100,12 +103,62 @@ class DistanceTriggerTests(unittest.TestCase):
         )
 
         clock.now = 1.0
+        self.assertFalse(trigger.process_depth_frame(released_depth, depth_scale_m=0.001))
         self.assertFalse(trigger.process_depth_frame(depth, depth_scale_m=0.001))
         self.assertEqual(q_detected.qsize(), 0)
 
         clock.now = 2.1
+        self.assertFalse(trigger.process_depth_frame(released_depth, depth_scale_m=0.001))
         self.assertTrue(trigger.process_depth_frame(depth, depth_scale_m=0.001))
         self.assertEqual(q_detected.qsize(), 1)
+
+    def test_trigger_requires_consecutive_close_frames(self) -> None:
+        q_detected: Queue[dict[str, object]] = Queue()
+        trigger = L515DistanceTrigger(
+            q_detected,
+            config=DistanceTriggerConfig(
+                trigger_distance_cm=30.0,
+                roi_fraction=0.5,
+                invalid_ratio_threshold=0.9,
+                required_consecutive_frames=3,
+            ),
+            now=fixed_ts,
+        )
+        depth = np.full((6, 6), 250, dtype=np.uint16)
+
+        self.assertFalse(trigger.process_depth_frame(depth, depth_scale_m=0.001))
+        self.assertFalse(trigger.process_depth_frame(depth, depth_scale_m=0.001))
+        self.assertTrue(trigger.process_depth_frame(depth, depth_scale_m=0.001))
+
+        self.assertEqual(q_detected.qsize(), 1)
+        self.assertEqual(q_detected.get_nowait()["distance_cm"], 25.0)
+
+    def test_release_distance_resets_trigger_after_user_moves_away(self) -> None:
+        q_detected: Queue[dict[str, object]] = Queue()
+        trigger = L515DistanceTrigger(
+            q_detected,
+            config=DistanceTriggerConfig(
+                trigger_distance_cm=30.0,
+                release_distance_cm=45.0,
+                cooldown_sec=0.0,
+                roi_fraction=0.5,
+                invalid_ratio_threshold=0.9,
+                required_consecutive_frames=1,
+            ),
+            now=fixed_ts,
+        )
+        close_depth = np.full((6, 6), 250, dtype=np.uint16)
+        middle_depth = np.full((6, 6), 400, dtype=np.uint16)
+        released_depth = np.full((6, 6), 500, dtype=np.uint16)
+
+        self.assertTrue(trigger.process_depth_frame(close_depth, depth_scale_m=0.001))
+        self.assertFalse(trigger.process_depth_frame(close_depth, depth_scale_m=0.001))
+        self.assertFalse(trigger.process_depth_frame(middle_depth, depth_scale_m=0.001))
+        self.assertFalse(trigger.process_depth_frame(close_depth, depth_scale_m=0.001))
+        self.assertFalse(trigger.process_depth_frame(released_depth, depth_scale_m=0.001))
+        self.assertTrue(trigger.process_depth_frame(close_depth, depth_scale_m=0.001))
+
+        self.assertEqual(q_detected.qsize(), 2)
 
     def test_trigger_ignores_invalid_or_far_depth_frames(self) -> None:
         q_detected: Queue[dict[str, object]] = Queue()

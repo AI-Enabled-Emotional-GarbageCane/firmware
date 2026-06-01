@@ -11,6 +11,7 @@ class L515CameraConfig:
     height: int = 480
     fps: int = 30
     warmup_frames: int = 30
+    timeout_ms: int = 1000
     laser_on: bool = True
 
 
@@ -42,7 +43,7 @@ class L515DepthCamera:
             depth_sensor.set_option(rs.option.emitter_enabled, 1 if self._config.laser_on else 0)
 
         for _ in range(max(0, int(self._config.warmup_frames))):
-            pipeline.wait_for_frames()
+            pipeline.wait_for_frames(int(self._config.timeout_ms))
 
         self._rs = rs
         self._pipeline = pipeline
@@ -50,7 +51,7 @@ class L515DepthCamera:
     def read_depth_frame(self) -> np.ndarray:
         if self._pipeline is None:
             raise RuntimeError("L515DepthCamera.start() must be called before reading frames")
-        frames = self._pipeline.wait_for_frames()
+        frames = self._pipeline.wait_for_frames(int(self._config.timeout_ms))
         depth_frame = frames.get_depth_frame()
         if not depth_frame:
             raise RuntimeError("missing L515 depth frame")

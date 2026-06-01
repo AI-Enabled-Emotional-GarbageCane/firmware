@@ -12,7 +12,9 @@ import numpy as np
 @dataclass(frozen=True)
 class DistanceTriggerConfig:
     trigger_distance_cm: float = 30.0
+    release_distance_cm: float = 45.0
     cooldown_sec: float = 2.0
+    required_consecutive_frames: int = 3
     roi_fraction: float = 0.5
     invalid_center_fraction: float = 0.9
     invalid_ratio_threshold: float = 0.70
@@ -92,6 +94,8 @@ class L515DistanceTrigger:
         self._monotonic = monotonic
         self._now = now
         self._last_emit_at: float | None = None
+        self._close_frame_count = 0
+        self._detected_active = False
 
     def process_depth_frame(self, depth_raw: np.ndarray, *, depth_scale_m: float) -> bool:
         cfg = self._config
@@ -103,6 +107,7 @@ class L515DistanceTrigger:
             min_valid_cm=cfg.min_valid_cm,
             max_valid_cm=cfg.max_valid_cm,
         ):
+            self._close_frame_count = 0
             return False
 
         distance_cm = compute_center_roi_distance_cm(
@@ -112,7 +117,25 @@ class L515DistanceTrigger:
             min_valid_cm=cfg.min_valid_cm,
             max_valid_cm=cfg.max_valid_cm,
         )
-        if distance_cm is None or distance_cm > cfg.trigger_distance_cm:
+        if distance_cm is None:
+            self._close_frame_count = 0
+            return False
+
+        if distance_cm >= cfg.release_distance_cm:
+            self._detected_active = False
+            self._close_frame_count = 0
+            return False
+
+        if distance_cm > cfg.trigger_distance_cm:
+            self._close_frame_count = 0
+            return False
+
+        if self._detected_active:
+            return False
+
+        self._close_frame_count += 1
+        required = max(1, int(cfg.required_consecutive_frames))
+        if self._close_frame_count < required:
             return False
 
         now_mono = self._monotonic()
@@ -120,6 +143,7 @@ class L515DistanceTrigger:
             return False
 
         self._last_emit_at = now_mono
+        self._detected_active = True
         self._q_detected.put(
             {
                 "event": "user_detected",

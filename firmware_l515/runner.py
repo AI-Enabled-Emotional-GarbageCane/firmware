@@ -5,6 +5,7 @@ import time
 from typing import Callable, Protocol
 
 from .distance_trigger import DistanceTriggerConfig, L515DistanceTrigger
+from .led import LEDController, LEDStatus
 from .realsense_l515 import L515DepthCamera
 
 
@@ -26,19 +27,21 @@ def run_distance_trigger_loop(
     max_frames: int | None = None,
     poll_delay_sec: float = 0.0,
     on_status: Callable[[str], None] | None = None,
+    led_controller: LEDController | None = None,
 ) -> int:
     camera = camera or L515DepthCamera()
     trigger = L515DistanceTrigger(q_detected, config=config)
     processed = 0
 
-    def status(value: str) -> None:
+    def status(value: LEDStatus) -> None:
+        if led_controller is not None:
+            led_controller.set_status(value)
         if on_status is not None:
             on_status(value)
 
-    status("starting")
-    camera.start()
-    status("idle")
     try:
+        camera.start()
+        status("idle")
         while max_frames is None or processed < max_frames:
             depth_raw = camera.read_depth_frame()
             depth_scale_m = camera.depth_scale_m
@@ -49,6 +52,9 @@ def run_distance_trigger_loop(
             processed += 1
             if poll_delay_sec > 0:
                 time.sleep(poll_delay_sec)
+    except Exception:
+        status("camera_error")
+        raise
     finally:
         camera.stop()
     return processed
