@@ -10,8 +10,8 @@ class L515CameraConfig:
     width: int = 640
     height: int = 480
     fps: int = 30
-    warmup_frames: int = 30
-    timeout_ms: int = 1000
+    warmup_frames: int = 5
+    timeout_ms: int = 3000
     laser_on: bool = True
 
 

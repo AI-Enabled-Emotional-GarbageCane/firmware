@@ -1,0 +1,16 @@
+{
+  "contract_version": "v0.3",
+  "source_repo": "https://github.com/AI-Enabled-Emotional-GarbageCane/ai-enabled-emotional-garbagecane",
+  "source_commit": "pending-center-contract-commit",
+  "module": "firmware",
+  "owned_events": [
+    "user_detected"
+  ],
+  "consumed_events": [],
+  "forbidden_cross_repo_changes": [
+    "rename q_detected",
+    "remove required user_detected payload fields",
+    "take ownership of model inference, UI, voice playback, or user confirmation flow",
+    "wait for display commands before completing the public flow"
+  ]
+}
