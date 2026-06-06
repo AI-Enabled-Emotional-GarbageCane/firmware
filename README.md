@@ -18,6 +18,12 @@ Firmware 不負責：
 - display UI 或 admin panel。
 - 使用者按鈕。
 
+## ESP32-S3 Voice Player（可選播放端）
+
+若要用 ESP32 播放 AGX / Jetson 產生的 GPT-SoVITS 語音素材，本 repo 另提供 `esp32_voice_player/` sketch。它是獨立的 speaker controller：透過 USB Serial / UART 收到 `{category, audio_path}` 後，從 SD card 讀 WAV 並以 I2S 播到 MAX98357A。
+
+這不改 `firmware_l515` 的 v0.3 public contract；L515 firmware 仍只負責 `q_detected` / `user_detected`。語音模型與聲音複製仍在 AGX / Jetson 端，ESP32 只播放音檔。
+
 ## Public Contract
 
 `firmware -> vision`
